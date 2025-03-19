@@ -1,0 +1,344 @@
+cls
+fastgraphics
+graphsize 480,480
+clg
+
+# SET KEY values
+key_down=16777237
+key_up=16777235
+key_left=16777234
+key_right=16777236
+key_space=32
+range_list[] = {100, 200, 400, 800, 1600}
+step_list[] = {5, 10, 15, 20, 45}
+
+# SETTING DEFAULTS
+beam_range = prompt("Please enter desired starting range [100, 200,400,800,1600].", 400)
+beam_step = prompt("Please enter starting scan step [5,10,15,20, 45].", 20)
+beam_width = prompt("Please enter starting transdcuer beamwidth[5-20].", 20)
+beam_tilt = prompt("Please enter starting beam tilt[5-20].", 45)
+gain = prompt("Please enter starting gain setting [0-100].", 70)
+snd_on  = confirm("Do you want sound activated? Y/N")
+gnd_on = confirm("Do you want show bottom target? Y/N")
+tgt_on = confirm("Do you want show fish target? Y/N")
+if tgt_on = true then
+	target_size = prompt("Please enter fish target size[1-10].", 10)
+end if
+
+# CALCULATE MORE SETTINGS
+beam_size = calcBeamSize(beam_range, beam_width)
+beam_depth = calcBeamDepth(beam_range, beam_tilt)
+slant_range = calcSlantRange(beam_range, beam_tilt)
+slant_beam_size = calcBeamSize(slant_range, beam_width)
+if target_size > 0 then
+	target_x = int(rand * 280) + 100
+	target_y = int(rand * 280) + 100
+	target_brg = calcTargetBearing(target_x, target_y)
+else
+	target_x = 0
+	target_y = 0
+end if
+
+# INITIALIZE SCREEN
+call set_menu()
+call set_background()
+call update_settings(beam_range, beam_step, beam_width, gain)
+call update_tilt(beam_range, beam_tilt)
+refresh
+
+# BEGIN SCANNING
+while not key(32)
+	start = msec
+	for step_angle  =  0 to 360  step beam_step
+		begin case
+			case keypressed(key_down)
+				if beam_tilt < 90 then
+					beam_tilt = beam_tilt + 5
+					beam_depth = calcBeamDepth(beam_range, beam_tilt)
+					slant_range = calcSlantRange(beam_range, beam_tilt)
+					slant_beam_size = calcBeamSize(slant_range, beam_width)
+					call update_tilt(beam_range, beam_tilt)
+				end if
+			case keypressed(key_up)
+				if beam_tilt > 0 then
+					beam_tilt = beam_tilt - 5
+					beam_depth = calcBeamDepth(beam_range, beam_tilt)
+					slant_range = calcSlantRange(beam_range, beam_tilt)
+					slant_beam_size = calcBeamSize(slant_range, beam_width)
+					call update_tilt(beam_range, beam_tilt)
+				end if
+			case keypressed(key_right)
+				if gain < 100 then
+					gain = gain + 5
+					call update_settings(beam_range, beam_step, beam_width, gain)
+				end if
+			case keypressed(key_left)
+				if gain > 0 then
+					gain = gain - 5
+					call update_settings(beam_range, beam_step, beam_width, gain)
+				end if
+			case key(key_space)
+				new_range = prompt("Please enter desired range [100, 200,400,800,1600].", 400)
+				for r = 0 to 4
+					if  new_range = range_list[r] then
+						beam_range = new_range
+						beam_size = calcBeamSize(beam_range, beam_width)
+						exit for
+					end if
+				next r
+				new_step = prompt("Please enter desired step [5,10,15,20, 45].", 20)
+				for s = 0 to 4
+					if new_step = step_list[s] then
+						beam_step = new_step
+						exit for
+					end if
+				next s
+				new_width = prompt("Please enter transdcuer beamwidth[5-20].", 20)
+				if new_width < 5 then
+					beam_width = 5
+					beam_size = calcBeamSize(beam_range, beam_width)
+				end if
+				if new_width > 20 then
+					beam_width = 20
+					beam_size = calcBeamSize(beam_range, beam_width)
+				else
+					beam_width = new_width
+					beam_size = calcBeamSize(beam_range, beam_width)
+				end if
+				snd_on  = confirm("Do you want sound activated? Y/N")
+				gnd_on = confirm("Do you want show bottom target? Y/N")	
+				tgt_on = confirm("Do you want show fish target? Y/N")				
+				call update_settings(beam_range, beam_step, beam_width, gain)
+		end case
+		call update_ppi(beam_range, beam_width, step_angle, beam_size, target_size, target_x, target_y, gain, beam_depth, slant_range, slant_beam_size, tgt_on, gnd_on)
+		begin case
+			case beam_range = 100
+				pause 0.2
+			case beam_range = 200
+				pause 0.3
+			case beam_range = 400
+				pause 0.4
+			case beam_range = 800
+				pause 0.5
+			case beam_range = 1600
+				pause 0.6
+		end case
+		if snd_on = true then
+			sound(500, 25)
+		end if
+		if tgt_on = true then
+			brg_diff = abs((step_angle - target_brg + 540) % 360 - 180)
+		    if brg_diff < 5 then
+		    	if snd_on then
+					sound(1000, 25)
+				end if
+				color rgb(0,0,255)
+				circle target_x, target_y, target_size * (gain / 150)
+				refresh
+			end if 
+		end if
+	next step_angle
+	stop = msec
+	scan_time = stop - start
+	call update_scantime(scan_time)
+end while
+
+# SET MENU
+subroutine set_menu()
+	print "SEARCHLIGHT SONAR SIMULATOR"
+	print
+	print "-------MAIN MENU-----------"
+	print "Increase TILT (Up Arrow)"
+	print "Decrease TILT (Down Arrow)"
+	print "Increase GAIN (Right Arrow)"
+	print "Decrease GAIN (Left Arrow)"
+	print "Change  RANGE/STEP/BEAM/TARGETS/SOUND (ESC/SPACE)"
+	print
+	print
+	print "-------BEAM DATA------------"
+	print "   Red - Beam Depth at Range Ring"
+	print "Yellow - Beam Slant Range at Range Ring"
+	print " Green - Beam Width at Range Range Ring"
+	print "  Cyan - Slant Range Beam Width at Range Ring"
+end subroutine
+
+# SET BACKGROUND
+subroutine set_background()
+	penwidth 5
+	#Scan Background
+	color black, darkblue
+	rect 0,0,480,480
+end subroutine
+
+# UPDATE SETTING TEXT
+subroutine update_settings(beam_range, beam_step, beam_width, gain)
+	font "Tahoma", 14, 100
+	color darkblue
+	rect 5, 5, 130, 25
+	color white
+	text 5, 5, "RNG: " + beam_range + " ft"
+	color darkblue
+	rect 5,30,100, 25
+	color white
+	text 5,30, "GAIN: " + gain
+	color darkblue
+	rect 362, 5, 105, 25
+	color white
+	text 362, 5, "BEAM: " + beam_width + chr(176)
+	color darkblue
+	rect 370, 30, 100, 25
+	color white
+	text 370,30, "STEP: " + beam_step + chr(176)
+end subroutine
+
+# UPDATE TILT INDICATOR
+subroutine update_tilt(beam_range, beam_tilt)
+	color darkblue
+	rect 5, 400, 60, 75
+	color white
+	font "Tahoma", 14, 100
+	text 10, 405, "TILT"
+	penwidth 2
+	font "Tahoma", 8, 100
+	line 10, 430, 50, 430
+	line 10, 430, 10, 460
+	color yellow
+	text 55, 423, 0
+	text 5, 460, 90
+	color red
+	pie 12,432,40, radians(int(beam_tilt) + 90), radians(2)
+	font "Tahoma", 12, 100
+	text 40, 455, beam_tilt + chr(176)
+end subroutine
+
+# UPDATE SCAN TIME
+subroutine update_scantime(scan_time)
+	color darkblue
+	rect 365,435,110, 50
+	color cyan
+	font "Tahoma", 14, 100
+	text 365,435, "SCAN"
+	text 365,455, "TIME: " + string(int((scan_time)/1000)) + " s"
+end subroutine
+
+# UPDATE ALL PPI COMPONENTS
+subroutine update_ppi(beam_range, beam_width, step_angle, beam_size, target_size, target_x, target_y, gain, beam_depth, slant_range, slant_beam_size, tgt_on, gnd_on)
+	# PPI Background
+	color blue
+	circle 240, 240, 225
+	# Bottom	Target
+	if gnd_on = true then
+		penwidth 20
+		color red, clear
+		circle 240, 240, 200
+		penwidth 3
+		color yellow, clear
+		circle 240, 240, 190
+		circle 240, 240, 210
+	end if
+	# Sonar Beam
+	color  cyan
+	pie 240,240,220, radians(step_angle - (beam_width / 2)), radians(beam_width)
+	#  Fish Target
+	color rgb(255-(gain * 2.55),255,255-(gain * 2.55))
+	if tgt_on then
+		circle target_x, target_y, target_size * (gain / 100)
+	end if
+	# Range Rings
+	color yellow, clear
+	penwidth 2
+	circle 240, 240, 225
+	circle 240, 240, 168
+	circle 240, 240, 112
+	circle 240, 240, 56
+	# Heading Marker
+	color yellow
+	circle 240,240,5
+	line 240, 240, 240, 20
+	line 240, 240, 460, 240
+	line 240, 240, 240, 460
+	line 240, 240, 20, 240
+	# Range Ring Distances
+	color white
+	font "Tahoma", 10, 100
+	text 225, 164, int((beam_range / 4)) + "ft"
+	text 225, 108, int((beam_range / 4) * 2) + "ft"
+	text 225, 52, int((beam_range /4) * 3) + "ft"
+	# Beam Width at Range Ringe Distance
+	color green
+	font "Tahoma", 8, 100
+	text  270, 225, int(beam_size / 4)
+	text  325, 225, int(beam_size / 2)
+	text  380, 225, int((beam_size / 4) * 3)
+	text  435, 225, int(beam_size)	
+	# Depth of Beam at Rings based on Tilt
+	color red
+	font "Tahoma", 8, 100
+	text  195, 225, int(beam_depth / 4)
+	text  135, 225, int(beam_depth / 2)
+	text  80, 225, int((beam_depth / 4) * 3)
+	text  20, 225, int(beam_depth)
+	# Slant Rings based on Tilt
+	color yellow
+	font "Tahoma", 8, 100
+	text  195, 240, int(slant_range / 4)
+	text  135, 240, int(slant_range / 2)
+	text  80, 240, int((slant_range / 4) * 3)
+	text  20, 240, int(slant_range)
+	# Beam width at Slant Range Distance
+	color cyan
+	font "Tahoma", 8, 100
+	text  270, 240, int(slant_beam_size / 4)
+	text  325, 240, int(slant_beam_size / 2)
+	text  380, 240, int((slant_beam_size / 4) * 3)
+	text  435, 240, int(slant_beam_size)	
+	refresh
+end subroutine
+
+# CALUCULATE BEAM WIDTH AT RANGE
+Function calcBeamSize(beam_range, beam_width)
+	a = radians(beam_width/2)
+	s = beam_range/cos(a)
+	c = sqrt((s*s)-(beam_range * beam_range)) * 2
+	return c
+End Function
+
+# CALUCULATE BEAM DEPTH AT RANGE
+Function calcBeamDepth(beam_range, beam_tilt)
+	return beam_range * tan(radians(beam_tilt))
+End Function
+
+# CALUCULATE SLANT RANGE
+Function calcSlantRange(beam_range, beam_tilt)
+	return beam_range / cos(radians(beam_tilt))
+End Function
+
+# CALUCULATE  TARGET BEARING
+Function calcTargetBearing(target_x, target_y)
+	origin_x = 240
+	origin_y = 240
+	if target_x > origin_x then
+		quad_x =  target_x - origin_x
+	else
+		quad_x =  -1 * (origin_x - target_x)
+	end if 
+	if target_y > origin_y then
+		quad_y = -1 * (target_y - origin_y)
+	else
+		quad_y =  origin_y - target_y
+	end if
+	begin case
+		# 0-90 degrees
+		case quad_x > 0 and quad_y > 0	
+			return int(degrees(Atan(quad_x / quad_y)))
+		# 91-180 degrees
+		case quad_x > 0 and quad_y < 0	
+			return int(180 + degrees(Atan(quad_x / quad_y)))
+		# 181-270 degrees
+		case quad_x < 0 and quad_y < 0	
+			return int(180 + degrees(Atan(quad_x / quad_y)))
+		# 271-360 degrees	
+		case quad_x < 0 and quad_y > 0	
+			return int(360 + degrees(Atan(quad_x / quad_y)))
+	end case		
+End Function

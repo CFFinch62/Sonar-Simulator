@@ -1,0 +1,65 @@
+fastgraphics
+graphsize 200,200
+clg
+penwidth 5
+color cyan, black
+rect 0,0,200,200
+refresh
+
+pulse_rate = prompt ("Set Pulse Rate:")
+scan_mode = prompt (" Set Scan Mode: [1 = dual scan, 2 = top scan, 3 = bottom scan]")
+font "Verdana", 12, 100
+color yellow
+begin case
+	case scan_mode = 1
+		text 	140, 150, "DUAL"
+		text 140,170, "SCAN" 
+	case scan_mode = 2
+		text 	140, 150, "TOP"
+		text 140,170, "SCAN" 
+	case scan_mode = 3
+		text 	140, 150, "BOT"
+		text 140,170, "SCAN" 
+end case
+
+while not key(32)
+	#DOWN SCAN
+	for i = 1 to 90
+		penwidth 3
+		color yellow
+		plot(int(198 * cos(radians(i))), int(198 * sin(radians(i))))
+		penwidth 2
+		if i mod pulse_rate = 0 then
+			color red
+		else
+			color green
+		end if
+		pie 2,2,194, radians(i + 90), radians(1)
+		color darkblue
+		pie 2,2,194, radians(i + 89), radians(1)
+		refresh
+		if scan_mode <> 3 then
+			pause 0.05
+		end if
+	next i
+	
+	# UP SCAN
+	for i = 90 to 0 step -1
+		penwidth 3
+		color green
+		plot(int(198 * cos(radians(i))), int(198 * sin(radians(i))))
+		penwidth 2
+		if i mod pulse_rate = 0 then
+			color red
+		else
+			color yellow
+		end if
+		pie 2,2,194, radians(i + 89), radians(1)
+		color darkblue
+		pie 2,2,194, radians(i + 90), radians(1)
+		if scan_mode <> 2  then
+			pause 0.05
+		end if
+		refresh
+	next i
+end while

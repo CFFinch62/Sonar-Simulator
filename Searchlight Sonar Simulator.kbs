@@ -1,0 +1,101 @@
+cls
+fastgraphics
+graphsize 640,480
+clg
+
+# GET SETTINGS
+step_size = prompt("Please enter desired step [5,10,15,20].",20)
+beam_width = prompt("Please enter transdcuer beamwidth[8-12].",12)
+beam_tilt = prompt("Please enter desired beam tilt [0-90]:", 10)
+target_size = prompt("Please enter target size [1-10] (0 = No Target):",0)
+
+# DRAW BACKGROUND, SETTINGS TEXT, AND TILT INDICATOR
+#Background
+color darkblue
+rect 0,0,480,480
+# Settings Text
+color white
+font "Tahoma", 14, 100
+text 5, 5, "RANGE: 100m"
+text 5,30, "STEP: " + string(step_size)
+text 325, 5, "BEAM: " + beam_width + " deg"
+# Tilt Indicator
+text 5, 400, "TILT"
+color white
+penwidth 2
+line 10, 430, 50, 430
+line 10, 430, 10, 470
+color red
+pie 10,430,40, radians(int(beam_tilt) + 90), radians(2)
+text 60, 450, beam_tilt + " deg"
+refresh
+
+# BEGIN SCANNING
+while not key(32)
+	start = msec
+	call update_screen(beam_width, 0, 0)
+	for step_angle  =  step_size  to 360  step step_size
+		call update_screen(beam_width, step_angle, target_size)
+		pause 0.2
+	next step_angle
+	stop = msec
+	scan_time = stop - start
+	color white
+	font "Tahoma", 14, 100
+	text 360, 430, "SCAN"
+	text 360,450, "TIME: " + string(int(scan_time/1000)) + " s"
+end while
+
+# UPDATE ALL PPI COMPONENTS
+subroutine update_screen(beam_width, step_angle, target_size)
+	# Background
+	color blue
+	circle 240,240, 225
+	# Range Rings
+	color yellow, clear
+	penwidth 2
+	circle 240,240, 225
+	circle 240,240, 168
+	circle 240, 240, 112
+	circle 240, 240, 56
+	# Sonar Beam
+	color  cyan, clear
+	pie 240,240,220, radians(step_angle - (beam_width / 2)), radians(beam_width)
+	# Heading Marker
+	color yellow
+	circle 240,240,5
+	line 240, 240, 240, 20
+	line 240, 240, 460, 240
+	line 240, 240, 240, 460
+	line 240, 240, 20, 240
+	# Range Ring Distances
+	color white
+	font "Tahoma", 10, 100
+	text 225, 164, "25m"
+	text 225, 108, "50m"
+	text 225, 52, "75m"
+	# Beam Width at Rings
+	if step_angle >= 80  or step_angle = 0 then
+		color green
+		font "Tahoma", 8, 100
+		text  270, 225, "4.4"
+		text  330, 225, "8.8"
+		text  380, 225, "17.6"
+		text  435, 225, "35.2"
+	end if
+	# Depth of Beam at Rings based on Tilt
+	if step_angle >= 270  or step_angle = 0 then
+		color red
+		font "Tahoma", 8, 100
+		text  195, 225, "15"
+		text  135, 225, "30"
+		text  80, 225, "45"
+		text  20, 225, "60"
+	end if
+	# Target
+	if target_size > 0 and (step_angle + (0.5 * beam_width)) > 135 then
+		color red
+		circle 335, 345, target_size
+	end if
+	refresh
+end subroutine

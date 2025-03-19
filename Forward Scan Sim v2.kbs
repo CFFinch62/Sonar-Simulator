@@ -1,0 +1,34 @@
+fastgraphics
+graphsize 202,202
+clg
+penwidth 2
+color white, darkblue
+rect 0,0,200,200
+refresh
+
+while not key(32)
+	penwidth 1
+	#DOWN SCAN
+	for i = 1 to 85
+		color green
+		penwidth 2
+		pie 3,3,194, radians(i + 90), radians(5)
+		refresh
+		color darkblue
+		pie 3,3,194, radians(i + 89), radians(1)
+		refresh
+		pause 0.2
+	next i
+	
+	# UP SCAN
+	for i = 85 to 1 step -1
+		color red
+		penwidth 2
+		pie 3,3,194, radians(i + 89), radians(5)
+		refresh
+		color darkblue
+		pie 3,3,194, radians(i + 94), radians(1)
+		refresh
+		pause 0.2
+	next i
+end while

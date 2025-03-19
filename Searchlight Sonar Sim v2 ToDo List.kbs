@@ -1,0 +1,14 @@
+Searchlight Sonar Sim v2 ToDo List:
+
+1. Reduce routines to smallest subs possible
+2. Organize and Relocate subs to helper files
+3. Create better menu system
+4. Replace menu system with graphics controls
+5. Add key driven individual scan mode
+6. Change dot target to fish target and make variable size
+7. Add bottom and school targets both gain adjustable
+8. Create more realistic target color changes with GAIN adjustments
+9. Use this BASIC256 app as a stepping stone to another, cross platform, IDE for a compiled deliverable
+10. Use this app as a starting point to create generic PPI simulator app tool.
+11. Add target tracking (auto reverse) feature
+  
