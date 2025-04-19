@@ -1,3 +1,6 @@
+![SonarSimScreenshot](https://github.com/user-attachments/assets/60e8a70e-7ef0-4243-85ac-ccc2a7972295)
+
+
 # Sonar-Simulator
 BASIC256 Sonar Simlulator
 
